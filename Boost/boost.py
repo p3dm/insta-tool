@@ -1,12 +1,15 @@
 from google.oauth2.service_account import Credentials
 import sys
 import json
+import logging
 import time
 import uiautomator2 as u2
 import subprocess
 import time
 import random
-from worker.worker import getCommentByAI, buff_view, do_like, do_comment, do_repost, do_save
+from worker.worker import getCommentByAI, do_like, do_comment, do_repost
+
+ADB_PATH = r"../adb/windows/adb.exe"
 
 def running_buff_view(data):
     device_id = str(data["Phone ID"])
@@ -80,8 +83,8 @@ def buff_view(view_buff,sleep_time,d,listComment):
                 do_like(d)
             elif action == "comment":
                 do_comment(d,listComment)
-            # elif action == "repost":
-            #     do_repost(d)
+            elif action == "repost":
+                do_repost(d)
             # elif action == "save":
             #     do_save(d)
             else:

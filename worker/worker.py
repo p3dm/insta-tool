@@ -1,4 +1,3 @@
-import uiautomator2 as u2
 import sys
 import json
 import time
@@ -7,7 +6,7 @@ import requests
 import subprocess
 import time
 import random
-from google.oauth2.service_account import Credentials
+from google.oauth2.service_account import Credentials  # type: ignore[reportMissingImports]
 from googleapiclient.discovery import build
 from config import load_config
 
