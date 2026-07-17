@@ -72,3 +72,27 @@ def trigger_seeding():
     ).start()
     return jsonify({"status": "success", "message": "Seeding started"})
 
+@main_run_bp.route('/stop', methods=['GET','POST'])
+def stop_tool():
+    """Dừng tất cả process đang chạy + xóa scheduled jobs."""
+    with _process_lock:
+        targets = list(_active_processes)
+
+    if not targets:
+        return jsonify({"status": "success", "message": "No active processes to stop.", "stopped": 0})
+
+    for p in targets:
+        if p.is_alive():
+            p.terminate()
+            p.join(timeout=5)
+            if p.is_alive():
+                p.kill()  # force-kill if still alive after 5 s
+
+    with _process_lock:
+        for p in targets:
+            try:
+                _active_processes.remove(p)
+            except ValueError:
+                pass
+
+    return jsonify({"status": "success", "message": f"Stopped {len(targets)} process(es).", "stopped": len(targets)})

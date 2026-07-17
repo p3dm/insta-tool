@@ -4,6 +4,7 @@ import time
 import uiautomator2 as u2
 import requests
 import subprocess
+import os
 import time
 import random
 from google.oauth2.service_account import Credentials  # type: ignore[reportMissingImports]
@@ -13,6 +14,8 @@ from config import load_config
 Xpath = {
     "like_button": '//*[@content-desc="Like" and @selected="false"]|//*[@content-desc="Thích" and @selected="false"]',
     "comment_button": '//*[@content-desc="Comment"]',
+    "comment_input": '//*[@resource-id="com.instagram.android:id/layout_comment_thread_edittext_multiline"]',
+    "comment_submit": '//*[@resource-id="com.instagram.android:id/layout_comment_thread_post_button_icon"]',
     "share_button": '//*[contains(@content-desc, "Share video")]',
     "repost_button": '//*[@content-desc="Repost and @selected="false"]',
 
@@ -156,12 +159,12 @@ def do_like(d):
 def do_comment(d,listComment):
     d.xpath(Xpath["comment_button"]).click()
     time.sleep(2)
-    d.xpath('//*[@text="Add comment..."]|//*[@text="Thêm bình luận..."]').click()
+    d.xpath(Xpath["comment_input"]).click()
     time.sleep(3)
     comments = listComment.split("|")
     random_comment = random.choice(comments)
     d.send_keys(random_comment)
-    d.xpath('//*[@content-desc="@2131953937"]|//*[@content-desc="@2131888501"]|//*[@content-desc="@2131888199"]|//*[@content-desc="@2131888218"]|//*[@content-desc="@2131888231"]|//*[@content-desc="Post comment"]|//*[@resource-id="com.zhiliaoapp.musically:id/cg8" or @content-desc="@2131888260"]|//*[@content-desc="@2131888282"]|//*[@content-desc="@2131888272"]|//*[@resource-id="com.zhiliaoapp.musically:id/cgt"]').click()
+    d.xpath(Xpath["comment_submit"]).click()
     time.sleep(2)
     w, h = d.window_size()
     x = int(w * 0.5)
