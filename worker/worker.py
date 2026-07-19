@@ -175,25 +175,35 @@ def do_repost(d):
 # def do_save(d):
 #     d.xpath(reupButton_xpath).click_exists(2)
 
-def getCommentByAI(api_key, post_data,seeding_language,niche,topic,customer_portrait,goal_of_interaction):
-    prompt = f"""
-    Bạn là một AI chuyên tạo comment trên TikTok.  
-    Dữ liệu đầu vào:  
-    - post_data: {post_data}  
-    - seeding_language: {seeding_language}  
-    - niche: {niche}  
-    - topic: {topic}  
-    - customer_portrait: {customer_portrait}  
-    - goal_of_interaction: {goal_of_interaction}  
+def getCommentByAI(api_key, post_data,seeding_language = None, niche = None, topic = None, customer_portrait = None, goal_of_interaction = None):
+    if niche or topic or customer_portrait or goal_of_interaction:       
+        prompt = f"""
+        Bạn là một AI chuyên tạo comment trên TikTok.  
+        Dữ liệu đầu vào:  
+        - post_data: {post_data}  
+        - seeding_language: {seeding_language}  
+        - niche: {niche}  
+        - topic: {topic}  
+        - customer_portrait: {customer_portrait}  
+        - goal_of_interaction: {goal_of_interaction}  
 
-    Yêu cầu:  
-    - Sinh ra một comment ngắn gọn, tự nhiên, phù hợp với nội dung post_data.  
-    - Comment phải sử dụng đúng seeding_language.  
-    - Nội dung phải liên quan đến niche và topic.  
-    - Phù hợp với customer_portrait.  
-    - Đáp ứng goal_of_interaction.  
-    - Chỉ trả về comment, không giải thích gì thêm.
-    """
+        Yêu cầu:  
+        - Sinh ra một comment ngắn gọn, tự nhiên, phù hợp với nội dung post_data.  
+        - Comment phải sử dụng đúng seeding_language.  
+        - Nội dung phải liên quan đến niche và topic.  
+        - Phù hợp với customer_portrait.  
+        - Đáp ứng goal_of_interaction.  
+        - Chỉ trả về comment, không giải thích gì thêm.
+        """
+    else:
+        prompt = (
+            f"Tạo cho tôi bình luận \n"
+            f"Lưu ý: comment bằng tiếng {seeding_language} chỉ đưa ra kết quả duy nhất là 1 bình luận từ 5 đến 15 từ, Chỉ trả về kết quả, không giải thích. \n"
+            f"không dùng icon\n"
+            f"Dựa trên video ngắn trên Tiktok có caption: '{post_data}',\n"
+            f"hãy đưa ra một bình luận vui vẻ, tích cực, với góc nhìn khi tôi là người dùng tiktok lướt thấy video có captop này \n"
+        )
+        
 
 
     url = (

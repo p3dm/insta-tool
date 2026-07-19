@@ -13,13 +13,7 @@ from worker.worker import getCommentByAI, do_like, do_comment, do_repost
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ADB_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "adb", "windows", "adb.exe"))
 
-
-def _ensure_adb_path():
-    if not os.path.isfile(ADB_PATH):
-        raise FileNotFoundError(f"ADB not found at: {ADB_PATH}")
-
 def running_buff_view(data):
-    _ensure_adb_path()
     commentInPost = ""
     device_id = str(data["Phone ID"])
     device = u2.connect(device_id)
