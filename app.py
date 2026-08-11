@@ -94,7 +94,7 @@ if __name__ == "__main__":
         # Chờ Flask khởi động
         time.sleep(1)
 
-        # Chạy WebView trên main thread
+        #Chạy WebView trên main thread
         webview.create_window(
             "IgTool",
             "http://127.0.0.1:2004",

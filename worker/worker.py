@@ -21,7 +21,8 @@ Xpath = {
 
 }
 
-ADB_PATH = r"./adb/windows/adb.exe"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ADB_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "adb", "windows", "adb.exe"))
 SCOPES=["https://www.googleapis.com/auth/spreadsheets"]
 _service_cache = None
 
@@ -91,7 +92,7 @@ def get_bold_phone_rows(spreadsheet_id, sheet_name):
             "comment_language": cell(11),
             "Key Word": cell(12),
             "Total Time": cell(13),
-            "API_KEY" : cell(1),
+            "api_key" : cell(1),
             "cron":cell(14),
             "interval":cell(15),
             "date": cell(16)
@@ -155,27 +156,25 @@ def get_bold_phone_rows_2(spreadsheet_id, sheet_name):
 
 def do_like(d):
     if d.xpath(Xpath["like_button"]).exists:
-        d.xpath(Xpath["like_button"]).click()
-def do_comment(d,listComment):
-    d.xpath(Xpath["comment_button"]).click()
+        d.xpath(Xpath["like_button"]).click_exists()
+def do_comment(d, comment):
     time.sleep(2)
-    d.xpath(Xpath["comment_input"]).click()
+    d.xpath(Xpath["comment_button"]).click_exists()
+    time.sleep(2)
+    d.xpath(Xpath["comment_input"]).click_exists()
     time.sleep(3)
-    comments = listComment.split("|")
-    random_comment = random.choice(comments)
-    d.send_keys(random_comment)
-    d.xpath(Xpath["comment_submit"]).click()
+    d.send_keys(comment)
+    d.xpath(Xpath["comment_submit"]).click_exists()
     time.sleep(2)
     w, h = d.window_size()
     x = int(w * 0.5)
     y = int(h * 0.2)
-    d.click(x, y)
+    d.click_exists(x, y)
 def do_repost(d):
-    d.xpath(Xpath["comment_button"]).click()
-# def do_save(d):
-#     d.xpath(reupButton_xpath).click_exists(2)
+    d.xpath(Xpath["comment_button"]).click_exists()
 
-def getCommentByAI(api_key, post_data,seeding_language = None, niche = None, topic = None, customer_portrait = None, goal_of_interaction = None):
+
+def getCommentByAI(api_key, post_data, seeding_language = None, niche = None, topic = None, customer_portrait = None, goal_of_interaction = None):
     if niche or topic or customer_portrait or goal_of_interaction:       
         prompt = f"""
         Bạn là một AI chuyên tạo comment trên TikTok.  
@@ -259,3 +258,94 @@ def getCommentByAI(api_key, post_data,seeding_language = None, niche = None, top
         raise Exception(f"Gemini API trả về comment rỗng. Response: {json.dumps(result, ensure_ascii=False)}")
 
     return comment
+
+def generateKeyWordByAI(comment_language, keyWord, api_key):
+    """Generate 5 related keywords and return as list"""
+    prompt = (
+        f"Tạo cho tôi 5 từ khóa tìm kiếm trên tiktok liên quan đến '{keyWord}' bằng tiếng {comment_language}.\n"
+        f"Lưu ý: \n"
+        f"- Trả về 5 từ khóa, mỗi từ khóa trên một dòng\n"
+        f"- Mỗi từ khóa ngắn gọn từ 1 đến 3 từ khác biệt so với từ ban đầu (unique)\n"
+        f"- Chỉ trả về danh sách từ khóa, không đánh số, không giải thích\n"
+    )
+    URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}"
+
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": prompt}]
+            }
+        ]
+    }
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    res = requests.post(URL, headers=headers, data=json.dumps(payload))
+
+    if res.status_code == 200:
+        data = res.json()
+        try:
+            text = data["candidates"][0]["content"]["parts"][0]["text"]
+            # Parse kết quả thành list, loại bỏ dòng rỗng và khoảng trắng thừa
+            keywords = [line.strip() for line in text.strip().split('\n') if line.strip()]
+            return keywords
+        except Exception as e:
+            return []
+    else:
+        return []
+
+def random_sleep(min_seconds, max_seconds):
+    """Sleep for a random duration between min_seconds and max_seconds."""
+    sleep_time = random.uniform(min_seconds, max_seconds)
+    time.sleep(sleep_time)
+
+def grant_permission(d):
+    try:
+        if d.xpath('//*[@text="Allow all"]').exists:
+            d.xpath('//*[@text="Allow all"]').click_exists()
+        if d.xpath('//*[@resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]').exists:
+            d.xpath('//*[@resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]').click_exists()
+        if d.xpath('//*[@resource-id="com.instagram.android:id/igds_headline_headline"]').exists:
+            d.xpath('//*[@resource-id="com.instagram.android:id/bb_primary_action_container"]').click_exists()
+        if d.xpath('//*[@resource-id="com.instagram.android:id/clips_download_privacy_nux_title"]').exists:
+            d.xpath('//*[@resource-id="com.instagram.android:id/clips_download_privacy_nux_button"]').click_exists()
+    except Exception as e:
+        print(f"Error in grant_permission: {e}")
+
+def update_running_result(spreadsheet_id, sheet_name, phone_id, running_result):
+    service = _get_service()
+
+    values_response = service.spreadsheets().values().get(
+        spreadsheetId=spreadsheet_id,
+        range=sheet_name,
+    ).execute()
+
+    rows = values_response.get("values", [])
+    if not rows:
+        raise RuntimeError(f"Sheet '{sheet_name}' không có dữ liệu để cập nhật")
+
+    target_row = None
+    phone_id_text = str(phone_id).strip()
+
+    for row_index, row in enumerate(rows[1:], start=2):
+        current_phone_id = str(row[0]).strip() if row else ""
+        if current_phone_id == phone_id_text:
+            target_row = row_index
+            break
+
+    if target_row is None:
+        raise RuntimeError(
+            f"Không tìm thấy Phone ID '{phone_id_text}' trong sheet '{sheet_name}'"
+        )
+
+    service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_name}!G{target_row}",
+        valueInputOption="RAW",
+        body={"values": [[str(running_result)]]},
+    ).execute()
+
+    return target_row

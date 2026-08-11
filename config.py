@@ -1,7 +1,14 @@
 # config_manager.py
-import os, json, re
+import os, json, re, sys
 
-BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
+
+def _runtime_base_dir() -> str:
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+BASE_DIR      = _runtime_base_dir()
 USER_DATA_DIR = os.path.join(BASE_DIR, "user_data")
 CONFIG_FILE   = os.path.join(USER_DATA_DIR, "config.json")
 

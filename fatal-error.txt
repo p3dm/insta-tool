@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "E:\insta-tool\app.py", line 105, in <module>
+    webview.start(gui='edgechromium')
+  File "E:\insta-tool\.venv\Lib\site-packages\webview\__init__.py", line 243, in start
+    raise WebViewException('You must create a window first before calling this function.')
+webview.errors.WebViewException: You must create a window first before calling this function.

@@ -2,8 +2,10 @@ import threading, logging
 from multiprocessing import Process
 from flask import Blueprint, jsonify
 from config import load_config, get_spreadsheet_id, save_config
-from worker.worker import get_bold_phone_rows_2
-from Boost.boost import running_buff_view
+from worker.worker import get_bold_phone_rows, get_bold_phone_rows_2
+from controller.posting import running_post_video
+from controller.trust import main as running_trust_flow
+from controller.boost import running_buff_view
 
 main_run_bp = Blueprint('main_run_bp', __name__)
 
@@ -72,6 +74,28 @@ def trigger_seeding():
     ).start()
     return jsonify({"status": "success", "message": "Seeding started"})
 
+
+@main_run_bp.route('/start-posting', methods=['GET', 'POST'])
+def trigger_posting():
+    """POST /api/start-posting"""
+    threading.Thread(
+        target=_run_immediate_batch,
+        args=(running_post_video, get_bold_phone_rows, "seeding"),
+        daemon=True
+    ).start()
+    return jsonify({"status": "success", "message": "Posting started"})
+
+
+@main_run_bp.route('/start-flow', methods=['GET', 'POST'])
+def trigger_flow():
+    """POST /api/start-flow"""
+    threading.Thread(
+        target=_run_immediate_batch,
+        args=(running_trust_flow, get_bold_phone_rows, "seeding"),
+        daemon=True
+    ).start()
+    return jsonify({"status": "success", "message": "Trust flow started"})
+
 @main_run_bp.route('/stop', methods=['GET','POST'])
 def stop_tool():
     """Dừng tất cả process đang chạy + xóa scheduled jobs."""
@@ -83,9 +107,11 @@ def stop_tool():
 
     for p in targets:
         if p.is_alive():
+            logging.info("Terminating process %s from stop route", p)
             p.terminate()
             p.join(timeout=5)
             if p.is_alive():
+                logging.warning("Process %s did not exit, forcing kill", p)
                 p.kill()  # force-kill if still alive after 5 s
 
     with _process_lock:
