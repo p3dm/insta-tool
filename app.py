@@ -1,5 +1,6 @@
 # app.py
 import os, sys, time, threading, atexit, webview, logging, traceback
+from datetime import datetime
 from multiprocessing import freeze_support
 
 # ── PyInstaller helpers ──────────────────────────────────────────────────────
@@ -29,22 +30,22 @@ def unblock_bundled_files():
             except OSError:
                 pass
 
-# ── Setup sys.path TRƯỚC KHI import blueprint ────────────────────────────────
-# Phải làm ở đây vì blueprint import Boost/Trust ngay lúc module load
-sys.path.insert(0, resource_path('Boost'))
-# sys.path.insert(0, resource_path('Trust'))
-
-# ── Import sau khi path đã sẵn sàng ─────────────────────────────────────────
+# ── Import application modules ──────────────────────────────────────────────
 from flask import Flask
-# from scheduler_instance import scheduler
+from scheduler_instance import scheduler
 from blueprints.FE_routes   import fe_bp
 from blueprints.Run_Main   import main_run_bp
-# from blueprints.Run_Schedule import schedule_bp
+from blueprints.Run_Schedule import cron_bp, date_bp
 
 logging.basicConfig(
     filename="app-debug.log",
     level=logging.DEBUG,
     format="%(asctime)s %(levelname)s %(message)s"
+)
+logging.info(
+    "Scheduler timezone detected from this computer: %s (current time: %s)",
+    scheduler.timezone,
+    datetime.now(scheduler.timezone).isoformat(),
 )
 
 # ── Tạo Flask app ─────────────────────────────────────────────────────────────
@@ -56,20 +57,18 @@ app = Flask(
 app.secret_key = "tiktool-secret-change-me"
 
 # ── Register blueprints ───────────────────────────────────────────────────────
-#
-#   fe_bp       → không có prefix → xử lý /  /save-config  /start  /stop  /status  /shutdown
-#   main_run_bp → prefix /api     → /api/start-up-video  /api/update-avatar  ...
-#   schedule_bp → prefix /schedule → /schedule/start-up-video  /schedule/list-jobs  ...
-#
+
 app.register_blueprint(fe_bp)
-app.register_blueprint(main_run_bp, url_prefix='/api/ig')
-# app.register_blueprint(schedule_bp, url_prefix='/schedule')
+app.register_blueprint(main_run_bp, url_prefix='/api')
+app.register_blueprint(cron_bp, url_prefix='/cron') 
+app.register_blueprint(date_bp, url_prefix='/date')
+
 
 # ── Scheduler lifecycle ───────────────────────────────────────────────────────
 # KHÔNG start scheduler ở đây — chỉ start khi user bấm /start
 # Lý do: tránh spawn thread background khi multiprocessing fork child process
 
-# atexit.register(lambda: scheduler.shutdown(wait=False) if scheduler.running else None)
+atexit.register(lambda: scheduler.shutdown(wait=False) if scheduler.running else None)
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def run_flask():

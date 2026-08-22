@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Scheduled Jobs</title>
+    <link rel="icon" href="{{ url_for('static', filename='icon.ico') }}">
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #171614;
+        --card: #1c1b19;
+        --card2: #201f1d;
+        --border: #393836;
+        --text: #cdccca;
+        --muted: #979693;
+        --primary: #4f98a3;
+        --danger: #d163a7
+      }
+
+      * {
+        box-sizing: border-box
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 14px/1.55 Inter, Segoe UI, sans-serif
+      }
+
+      .page {
+        max-width: 1120px;
+        margin: auto;
+        padding: 28px 20px
+      }
+
+      .header,
+      .actions,
+      .summary {
+        display: flex;
+        align-items: center;
+        gap: 10px
+      }
+
+      .header {
+        padding-bottom: 22px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 22px
+      }
+
+      .logo {
+        width: 42px;
+        height: 42px;
+        object-fit: contain
+      }
+
+      .title {
+        flex: 1
+      }
+
+      .title h1 {
+        font-size: 20px;
+        margin: 0
+      }
+
+      .title p {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 13px
+      }
+
+      .btn {
+        cursor: pointer;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 9px 13px;
+        background: transparent;
+        color: var(--text);
+        text-decoration: none;
+        font: inherit
+      }
+
+      .btn:hover {
+        background: #2d2c2a
+      }
+
+      .primary {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff
+      }
+
+      .danger {
+        color: var(--danger)
+      }
+
+      .summary {
+        padding: 14px 16px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 16px
+      }
+
+      .count {
+        padding: 2px 9px;
+        border-radius: 999px;
+        background: #313b3b;
+        color: var(--primary);
+        font-weight: 700
+      }
+
+      .updated {
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 12px
+      }
+
+      .notice {
+        display: none;
+        margin-bottom: 16px;
+        padding: 10px 13px;
+        border: 1px solid var(--danger);
+        border-radius: 8px;
+        color: #efaccf
+      }
+
+      .notice.show {
+        display: block
+      }
+
+      .table-wrap {
+        overflow: auto;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px
+      }
+
+      table {
+        width: 100%;
+        min-width: 640px;
+        border-collapse: collapse
+      }
+
+      th,
+      td {
+        padding: 13px 16px;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border)
+      }
+
+      th {
+        background: var(--card2);
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .07em
+      }
+
+      tr:last-child td {
+        border: 0
+      }
+
+      .id {
+        font: 12px ui-monospace, Consolas, monospace;
+        color: #b9d5d8;
+        word-break: break-word
+      }
+
+      .detail {
+        max-width: 300px;
+        color: var(--muted);
+        font-size: 12px;
+        word-break: break-word
+      }
+
+      .next {
+        white-space: nowrap
+      }
+
+      .remove {
+        cursor: pointer;
+        border: 0;
+        background: transparent;
+        color: var(--danger);
+        padding: 2px
+      }
+
+      .empty {
+        padding: 52px 20px;
+        text-align: center;
+        color: var(--muted)
+      }
+
+      .empty strong {
+        display: block;
+        color: var(--text);
+        margin-bottom: 4px
+      }
+
+      .loading {
+        opacity: .55;
+        pointer-events: none
+      }
+
+      @media(max-width:650px) {
+        .page {
+          padding: 20px 14px
+        }
+
+        .header {
+          flex-wrap: wrap
+        }
+
+        .actions {
+          width: 100%
+        }
+
+        .updated {
+          display: none
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="page">
+      <header class="header">
+        <img class="logo" src="{{ url_for('static', filename='icon.png') }}" alt="">
+
+        <div class="title">
+          <h1>Schedule Management</h1>
+          <p>List of pending jobs in APScheduler.</p>
+        </div>
+
+        <div class="actions">
+          <a class="btn" href="{{ url_for('fe_bp.index') }}">← Home</a>
+          <button class="btn primary" id="refresh" type="button">↻ Refresh</button>
+          <button class="btn danger" id="clear" type="button">Clear All</button>
+        </div>
+      </header>
+
+      <div id="notice" class="notice" role="alert"></div>
+
+      <section class="summary">
+        <span>Pending jobs</span>
+        <span id="count" class="count">0</span>
+        <span id="updated" class="updated">Data not loaded yet</span>
+      </section>
+
+      <section id="table-wrap" class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Job ID</th>
+              <th>Next Run Date</th>
+              <th>Next Run Time</th>
+              <th>Trigger</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="jobs"></tbody>
+        </table>
+
+        <div id="empty" class="empty">
+          <strong>No scheduled jobs yet</strong>
+          Create a schedule from Google Sheets, then click “Refresh”.
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const jobsEl = document.querySelector('#jobs'),
+        empty = document.querySelector('#empty'),
+        notice = document.querySelector('#notice'),
+        count = document.querySelector('#count'),
+        wrap = document.querySelector('#table-wrap');
+
+      const esc = v => String(v ?? '').replace(/[&<>'"]/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+      }[c]));
+
+      function message(text) {
+        notice.textContent = text;
+        notice.classList.add('show');
+      }
+
+      function formatNextRun(value) {
+        if (!value || value === 'Pending') {
+          return { date: 'Pending startup', time: '—' };
+        }
+
+        const date = new Date(String(value).replace(' ', 'T'));
+
+        if (Number.isNaN(date.getTime())) {
+          return { date: String(value), time: '—' };
+        }
+
+        return {
+          date: date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          }),
+          time: date.toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          })
+        };
+      }
+
+      function render(jobs) {
+        count.textContent = jobs.length;
+        empty.hidden = jobs.length > 0;
+
+        jobsEl.innerHTML = jobs.map(j => {
+          const nextRun = formatNextRun(j.next_run);
+
+          return `
+            <tr>
+              <td class="id">${esc(j.id)}</td>
+              <td class="next">${esc(nextRun.date)}</td>
+              <td class="next">${esc(nextRun.time)}</td>
+              <td class="detail">${esc(j.trigger)}</td>
+              <td>
+                <button class="remove" data-id="${esc(j.id)}">Remove</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      async function load() {
+        wrap.classList.add('loading');
+        notice.classList.remove('show');
+
+        try {
+          const res = await fetch('/schedule/list-jobs');
+          const data = await res.json();
+
+          if (!res.ok || data.status !== 'success') {
+            throw Error(data.message || 'Unable to load scheduled jobs.');
+          }
+
+          render(data.jobs || []);
+
+          document.querySelector('#updated').textContent =
+            'Updated at ' + new Date().toLocaleTimeString('en-GB');
+        } catch (e) {
+          message(e.message);
+        } finally {
+          wrap.classList.remove('loading');
+        }
+      }
+
+      async function remove(id) {
+        if (!confirm(`Remove job "${id}"?`)) return;
+
+        try {
+          const res = await fetch('/schedule/jobs/' + encodeURIComponent(id), {
+            method: 'DELETE'
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw Error(data.message || 'Unable to remove the job.');
+          }
+
+          await load();
+        } catch (e) {
+          message(e.message);
+        }
+      }
+
+      document.querySelector('#refresh').onclick = load;
+
+      document.querySelector('#clear').onclick = async () => {
+        if (!confirm('Remove all scheduled jobs?')) return;
+
+        try {
+          const res = await fetch('/schedule/clear-jobs', {
+            method: 'POST'
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw Error(data.message || 'Unable to clear scheduled jobs.');
+          }
+
+          await load();
+        } catch (e) {
+          message(e.message);
+        }
+      };
+
+      jobsEl.onclick = e => {
+        const btn = e.target.closest('[data-id]');
+        if (btn) remove(btn.dataset.id);
+      };
+
+      load();
+    </script>
+  </body>
+</html>

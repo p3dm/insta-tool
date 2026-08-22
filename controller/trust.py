@@ -1,7 +1,7 @@
 import time
 import random
 import re
-from worker.worker import do_like, do_comment, do_repost, generateKeyWordByAI, getCommentByAI, random_sleep, update_running_result
+from worker.worker import do_like, do_comment, do_repost, generateKeyWordByAI, getCommentByAI, random_sleep, update_running_result, scroll_up, safe_string
 from config import get_spreadsheet_id
 import requests
 from google.oauth2 import service_account
@@ -20,7 +20,7 @@ Xpath = {
     "send_comment_1": '//*[@resource-id="com.zhiliaoapp.musically:id/cg8" or @content-desc="@2131888260"]',
     "search_box": "//*[@resource-id='com.instagram.android:id/action_bar_search_edit_text']",
     "search_profile": '//*[@resource-id="com.instagram.android:id/row_search_profile_image"]',
-    "post": '//*[@resource-id="com.instagram.android:id/grid_card_layout_container"]|//*[@resource-id="com.instagram.android:id/image_button"]',
+    "post": '//*[@resource-id="com.instagram.android:id/grid_card_layout_container"][1]',
     "share_button": '//*[contains(@content-desc, "Share video")]',
     "reup_button": '//*[contains(@content-desc,"Add or remove this video from Favorites")]',
     "profile_button": '//*[@content-desc="Profile"]',
@@ -36,7 +36,7 @@ Xpath = {
 
 def searchByKeyWord(d, keyWord):
     try:
-        d.xpath(Xpath["search"]).click_exists()
+        d.xpath(Xpath["search"]).click_exists(timeout=7)
         random_sleep(6,15)
         d.xpath(Xpath["search_box"]).click_exists()
         random_sleep(6,15)
@@ -52,11 +52,7 @@ def searchByKeyWord(d, keyWord):
     except Exception as e:
         return
 
-def scroll(d):
-    try:
-        d.swipe(500, 1500, 500, 500, duration=0.2)
-    except Exception as e:
-        return
+
 
 def flow1(d, keyWord, comment_language, api_key):
     """Flow 1: Search by keyword and interact"""
@@ -90,9 +86,9 @@ def flow1(d, keyWord, comment_language, api_key):
                 try:
                     if d.xpath(Xpath["x_button"]).exists or d.xpath(Xpath["close_button"]).exists:
                         d.xpath(Xpath["x_button"] + " | " + Xpath["close_button"]).click_exists()
-                        scroll(d)
+                        scroll_up(d)
                     else:
-                        scroll(d)
+                        scroll_up(d)
                     if chosen_action == "like":
                         random_sleep(3, 6)
                         do_like(d)
@@ -100,7 +96,7 @@ def flow1(d, keyWord, comment_language, api_key):
                         random_sleep(3, 6)
                         pass
                     if chosen_action == "comment":
-                        el = d.xpath("//*[@resource-id='com.instagram.android:id/clips_caption_component']/android.widget.ScrollView[1]/android.view.ViewGroup[1]/android.view.ViewGroup[1]")
+                        el = d.xpath("//*[@resource-id='com.instagram.android:id/clips_caption_component']/android.widget.scroll_upView[1]/android.view.ViewGroup[1]/android.view.ViewGroup[1]")
                         post_data = el.attrib.get('content-desc')
                         comment_text = getCommentByAI(api_key, post_data, comment_language) or "Nice post!"
                         random_sleep(3, 6)
@@ -109,11 +105,11 @@ def flow1(d, keyWord, comment_language, api_key):
                     if chosen_action == "repost":
                         random_sleep(3, 6)
                         do_repost(d)
-                    scroll(d)
+                    scroll_up(d)
                 except Exception as e:    
                     return                
                 random_sleep(10, 12)
-                scroll(d)
+                scroll_up(d)
             time.sleep(4)
         time.sleep(10)
         d.press('home')
@@ -138,7 +134,7 @@ def flow2(d, comment_language, api_key):
 
             if d.xpath(Xpath["x_button"]).exists or d.xpath(Xpath["close_button"]).exists or not d.xpath(Xpath["comment_button"]).exists or not d.xpath(Xpath["like_button"]).exists:
                 d.xpath(Xpath["x_button"] + " | " + Xpath["close_button"]).click_exists()
-                scroll(d)
+                scroll_up(d)
             if chosen_action == "like":
                 random_sleep(3, 6)
                 do_like(d)
@@ -146,7 +142,7 @@ def flow2(d, comment_language, api_key):
                 random_sleep(3, 6)
                 pass
             if chosen_action == "comment":
-                el = d.xpath("//*[@resource-id='com.instagram.android:id/clips_caption_component']/android.widget.ScrollView[1]/android.view.ViewGroup[1]/android.view.ViewGroup[1]")
+                el = d.xpath("//*[@resource-id='com.instagram.android:id/clips_caption_component']/android.widget.scroll_upView[1]/android.view.ViewGroup[1]/android.view.ViewGroup[1]")
                 post_data = el.attrib.get('content-desc')
                 comment_text = getCommentByAI(api_key, post_data, comment_language) or "Nice post!"
                 random_sleep(3, 6)
@@ -155,7 +151,7 @@ def flow2(d, comment_language, api_key):
             if chosen_action == "repost":
                 random_sleep(3, 6)
                 do_repost(d)
-            scroll(d)
+            scroll_up(d)
         time.sleep(10)
         d.press('home')
     except Exception as e:
@@ -179,10 +175,10 @@ def normalize_int(value):
 
 
 def main(data, sheet_name = "seeding"):
-    device_id = str(data["Phone ID"])
-    keyWord = str(data["Key Word"])
-    comment_language = str(data["comment_language"])
-    api_key = str(data["api_key"])
+    device_id = safe_string(data.get("Phone ID"))
+    keyWord = safe_string(data.get("Key Word"))
+    comment_language = safe_string(data.get("comment_language"))
+    api_key = safe_string(data.get("api_key"))
     total_time = normalize_int(data.get("Total Time", ""))
     spreadsheet_id = get_spreadsheet_id()
 

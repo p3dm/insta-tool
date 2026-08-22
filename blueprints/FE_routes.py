@@ -2,6 +2,8 @@ import os, time, threading, webbrowser
 from flask import Blueprint, render_template, request, jsonify, redirect
 from werkzeug.utils import secure_filename
 
+from scheduler_instance import scheduler
+
 from config import (
     load_config, save_config,
     parse_spreadsheet_id, USER_DATA_DIR
@@ -19,6 +21,12 @@ fe_bp = Blueprint('fe_bp', __name__)
 def index():
     cfg = load_config()
     return render_template('index.html', config=cfg)
+
+
+@fe_bp.route('/schedule-jobs')
+def schedule_jobs():
+    """Trang quản lý các job đang được APScheduler giữ trong bộ nhớ."""
+    return render_template('list_schedule.html')
 
 
 @fe_bp.route('/save-config', methods=['POST'])
@@ -79,8 +87,8 @@ def start_tool():
         return jsonify({"ok": False, "error": "File service account không tồn tại."}), 400
 
     # Khởi động scheduler nếu chưa chạy
-    # if not scheduler.running:
-    #     scheduler.start()
+    if not scheduler.running:
+        scheduler.start()
 
     # Mở Sheet trong browser
     webbrowser.open(cfg["sheet_url"])
@@ -110,7 +118,7 @@ def stop_tool():
             except ValueError:
                 pass
 
-    # scheduler.remove_all_jobs()
+    scheduler.remove_all_jobs()
 
     cfg = load_config()
     cfg["running"] = False
@@ -128,7 +136,7 @@ def status():
     cfg = load_config()
     with _process_lock:
         active_count = len(_active_processes)
-    # job_count = len(scheduler.get_jobs())
+    job_count = len(scheduler.get_jobs())
 
     return jsonify({
         "running":        cfg.get("running", False),
@@ -139,7 +147,7 @@ def status():
             os.path.exists(cfg.get("service_account_path", ""))
         ),
         "active_processes": active_count,
-        # "scheduled_jobs":   job_count,
+        "scheduled_jobs":   job_count,
     })
 
 

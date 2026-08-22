@@ -6,6 +6,7 @@ from worker.worker import get_bold_phone_rows, get_bold_phone_rows_2
 from controller.posting import running_post_video
 from controller.trust import main as running_trust_flow
 from controller.boost import running_buff_view
+from controller.update import update_avatar, update_bio, update_name
 
 main_run_bp = Blueprint('main_run_bp', __name__)
 
@@ -54,7 +55,6 @@ def _run_immediate_batch(target_func, getter_func, sheet_name: str):
     processes = [
         Process(target=target_func, args=(row,))
         for row in rows
-        if row.get("date") in (None, "", 0)
     ]
     if processes:
         _register_and_run(processes)
@@ -95,6 +95,36 @@ def trigger_flow():
         daemon=True
     ).start()
     return jsonify({"status": "success", "message": "Trust flow started"})
+
+@main_run_bp.route('/start-update-bio', methods=['GET', 'POST'])
+def trigger_update_bio():
+    """POST /api/start-update-bio"""
+    threading.Thread(
+        target=_run_immediate_batch,
+        args=(update_bio, get_bold_phone_rows, "seeding"),
+        daemon=True
+    ).start()
+    return jsonify({"status": "success", "message": "Update bio started"})
+
+@main_run_bp.route('/start-update-name', methods=['GET', 'POST'])
+def trigger_update_name():
+    """POST /api/start-update-name"""
+    threading.Thread(
+        target=_run_immediate_batch,
+        args=(update_name, get_bold_phone_rows, "seeding"),
+        daemon=True
+    ).start()
+    return jsonify({"status": "success", "message": "Update name started"})
+
+@main_run_bp.route('/start-update-avatar', methods=['GET', 'POST'])
+def trigger_update_avatar():
+    """POST /api/start-update-avatar"""
+    threading.Thread(
+        target=_run_immediate_batch,
+        args=(update_avatar, get_bold_phone_rows, "seeding"),
+        daemon=True
+    ).start()
+    return jsonify({"status": "success", "message": "Update avatar started"})
 
 @main_run_bp.route('/stop', methods=['GET','POST'])
 def stop_tool():

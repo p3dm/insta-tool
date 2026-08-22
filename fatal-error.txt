@@ -1,6 +1,32 @@
 Traceback (most recent call last):
+  File "E:\insta-tool\.venv\Lib\site-packages\webview\platforms\winforms.py", line 14, in <module>
+    import clr
+  File "E:\insta-tool\.venv\Lib\site-packages\clr.py", line 6, in <module>
+    load()
+  File "E:\insta-tool\.venv\Lib\site-packages\pythonnet\__init__.py", line 146, in load
+    raise RuntimeError("Failed to initialize Python.Runtime.dll")
+RuntimeError: Failed to initialize Python.Runtime.dll
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
   File "E:\insta-tool\app.py", line 105, in <module>
     webview.start(gui='edgechromium')
-  File "E:\insta-tool\.venv\Lib\site-packages\webview\__init__.py", line 243, in start
-    raise WebViewException('You must create a window first before calling this function.')
-webview.errors.WebViewException: You must create a window first before calling this function.
+  File "E:\insta-tool\.venv\Lib\site-packages\webview\__init__.py", line 248, in start
+    guilib = initialize(gui)
+             ^^^^^^^^^^^^^^^
+  File "E:\insta-tool\.venv\Lib\site-packages\webview\guilib.py", line 134, in initialize
+    if not try_import(guis):
+           ^^^^^^^^^^^^^^^^
+  File "E:\insta-tool\.venv\Lib\site-packages\webview\guilib.py", line 85, in try_import
+    if import_func():
+       ^^^^^^^^^^^^^
+  File "E:\insta-tool\.venv\Lib\site-packages\webview\guilib.py", line 74, in import_winforms
+    import webview.platforms.winforms as guilib
+  File "E:\insta-tool\.venv\Lib\site-packages\webview\platforms\winforms.py", line 17, in <module>
+    import clr
+  File "E:\insta-tool\.venv\Lib\site-packages\clr.py", line 6, in <module>
+    load()
+  File "E:\insta-tool\.venv\Lib\site-packages\pythonnet\__init__.py", line 146, in load
+    raise RuntimeError("Failed to initialize Python.Runtime.dll")
+RuntimeError: Failed to initialize Python.Runtime.dll

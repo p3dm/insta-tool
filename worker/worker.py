@@ -21,6 +21,8 @@ Xpath = {
 
 }
 
+pkg = "com.instagram.android"
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ADB_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "adb", "windows", "adb.exe"))
 SCOPES=["https://www.googleapis.com/auth/spreadsheets"]
@@ -93,9 +95,7 @@ def get_bold_phone_rows(spreadsheet_id, sheet_name):
             "Key Word": cell(12),
             "Total Time": cell(13),
             "api_key" : cell(1),
-            "cron":cell(14),
-            "interval":cell(15),
-            "date": cell(16)
+            "schedule":cell(14),
         })
 
     return result
@@ -139,16 +139,14 @@ def get_bold_phone_rows_2(spreadsheet_id, sheet_name):
         result.append({
             "Phone ID": phone_id,
             "view each phone": cell_value(1),
-            "cron": cell_value(3),
-            "interval"  : cell_value(4),
-            "date": cell_value(5),
-            "Comment/ @/ icon (enter)": cell_value(6),
-            "seeding language": cell_value(7),
-            "niche, topic": cell_value(8),
-            "customer portrait": cell_value(9),
-            "goalOfInteraction": cell_value(10),
-            "interaction orientation": cell_value(11),
-            "link": cell_value(12),
+            "schedule": cell_value(3),
+            "Comment/ @/ icon (enter)": cell_value(4),
+            "seeding language": cell_value(5),
+            "niche, topic": cell_value(6),
+            "customer portrait": cell_value(7),
+            "goalOfInteraction": cell_value(8),
+            "interaction orientation": cell_value(9),
+            "link": cell_value(10),
             "api_key": cell_value(2)
         })
 
@@ -157,6 +155,7 @@ def get_bold_phone_rows_2(spreadsheet_id, sheet_name):
 def do_like(d):
     if d.xpath(Xpath["like_button"]).exists:
         d.xpath(Xpath["like_button"]).click_exists()
+
 def do_comment(d, comment):
     time.sleep(2)
     d.xpath(Xpath["comment_button"]).click_exists()
@@ -170,8 +169,21 @@ def do_comment(d, comment):
     x = int(w * 0.5)
     y = int(h * 0.2)
     d.click_exists(x, y)
+
 def do_repost(d):
     d.xpath(Xpath["comment_button"]).click_exists()
+
+def scroll_up(d):
+    try:
+        d.swipe(500, 1500, 500, 500, duration=0.2)
+    except Exception as e:
+        return
+
+def scroll_down(d):
+    try:
+        d.swipe(500, 500, 500, 1500, duration=0.2)
+    except Exception as e:
+        return
 
 
 def getCommentByAI(api_key, post_data, seeding_language = None, niche = None, topic = None, customer_portrait = None, goal_of_interaction = None):
@@ -349,3 +361,13 @@ def update_running_result(spreadsheet_id, sheet_name, phone_id, running_result):
     ).execute()
 
     return target_row
+
+def safe_string(value, default=""):
+    if value is None:
+        return default
+    if isinstance(value, str):
+        value = value.strip()
+        if value.lower() in {"", "none", "null"}:
+            return default
+        return value
+    return str(value)

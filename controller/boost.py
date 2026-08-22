@@ -9,22 +9,28 @@ import subprocess
 import time
 import random
 from config import get_spreadsheet_id
-from worker.worker import getCommentByAI, do_like, do_comment, do_repost, update_running_result
+from worker.worker import getCommentByAI, do_like, do_comment, do_repost, update_running_result, safe_string
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ADB_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "adb", "windows", "adb.exe"))
 
+
+
 def running_buff_view(data, sheet_name="seeding_2"):
     try:
         commentInPost = ""
-        device_id = str(data["Phone ID"])
+        device_id = safe_string(data.get("Phone ID"))
+        if not device_id:
+            raise ValueError("Phone ID rỗng")
         device = u2.connect(device_id)
         device.press("home")
         device.app_stop("com.genfarmer.uiautomator")
-        view_target = data["view each phone"]
-        comments = data["Comment/ @/ icon (enter)"]
-        link = data["link"]
+        view_target = safe_string(data.get("view each phone"))
+        comments = safe_string(data.get("Comment/ @/ icon (enter)"))
+        link = safe_string(data.get("link"))
         spreadsheet_id = get_spreadsheet_id()
+        if not link:
+            raise ValueError("link rỗng")
         subprocess.run([
                 ADB_PATH,
                 "-s",
@@ -44,16 +50,16 @@ def running_buff_view(data, sheet_name="seeding_2"):
         )
         
         time.sleep(10)
-        if(comments!=""):
+        if comments:
             commentInPost = comments
         else:
             try:
-                language = data["seeding language"]
-                topic = data["niche, topic"]
-                customerPortrait = data["customer portrait"]
-                goalOfInteractio = data["goalOfInteraction"]
-                interactionOrientation = data["interaction orientation"]
-                api_key = data["api_key"]
+                language = safe_string(data.get("seeding language"))
+                topic = safe_string(data.get("niche, topic"))
+                customerPortrait = safe_string(data.get("customer portrait"))
+                goalOfInteractio = safe_string(data.get("goalOfInteraction"))
+                interactionOrientation = safe_string(data.get("interaction orientation"))
+                api_key = safe_string(data.get("api_key"))
                 el = device.xpath("//*[@resource-id='com.instagram.android:id/clips_caption_component']/android.widget.ScrollView[1]/android.view.ViewGroup[1]/android.view.ViewGroup[1]")
                 post_data = el.attrib.get('content-desc')
                 if not api_key:

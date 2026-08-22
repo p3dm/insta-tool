@@ -11,7 +11,7 @@ import random
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from config import load_config, get_spreadsheet_id
-from worker.worker import getCommentByAI, do_like, do_comment, do_repost, random_sleep, update_running_result
+from worker.worker import getCommentByAI, do_like, do_comment, do_repost, random_sleep, update_running_result, scroll_down, safe_string
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ADB_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "adb", "windows", "adb.exe"))
@@ -36,17 +36,21 @@ Xpath = {
     
 }
 
-
 def reset_service():
     global _service_cache
     _service_cache = None
 
 def running_post_video(data, sheet_name="seeding"):
-    device_id = str(data["Phone ID"])
-    link = data["Posting link (drive)"]
-    caption = str(data["caption/hashtag"])
-    music = data["Music keyword"]
+    device_id = safe_string(data.get("Phone ID"))
+    link = safe_string(data.get("Posting link (drive)"))
+    caption = safe_string(data.get("caption/hashtag"))
+    music = safe_string(data.get("Music keyword"))
     spreadsheet_id = get_spreadsheet_id()
+
+    if not device_id:
+        raise ValueError("Phone ID rỗng")
+    if not link:
+        raise ValueError("Posting link (drive) rỗng")
 
     if not spreadsheet_id:
         raise RuntimeError("Thiếu spreadsheet_id trong cấu hình")
@@ -124,20 +128,21 @@ def upload_video(d, music, caption):
         d.xpath('//*[@resource-id="com.instagram.android:id/select_button_tap_target"]').click_exists()
         random_sleep(3,5)
         d.xpath('//*[@content-desc="Done"]').click_exists()
-
     d.xpath('//*[@text="Next"]').click_exists()
     random_sleep(5, 10)
-    if caption != None or caption.strip() != "":
+    if caption:
         d.xpath(Xpath["text_field"]).click_exists()
         random_sleep(3,5)
         d.send_keys(caption)
     random_sleep(3,5)
     d.xpath('//*[@content-desc="Next"]').click_exists()
-    random_sleep(3,6)
+    random_sleep(3, 6)
     d.xpath('//*[@text="Share"]').click_exists()
-    random_sleep(3,6)
+    random_sleep(3, 6)
     d.xpath(Xpath['profile_tab']).click()
-    random_sleep(7,17)
+    random_sleep(120, 180)
+    scroll_down(d)
+    random_sleep(10, 15)
     d.press("home")
     logging.info("Upload flow completed")
 
