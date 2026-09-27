@@ -202,15 +202,17 @@ def _register_job_management(blueprint: Blueprint):
     @blueprint.route('/list-jobs', methods=['GET'])
     def list_jobs():
         """GET /<prefix>/list-jobs — xem job đang chờ"""
-        jobs = [
-            {
+        jobs = []
+        for job in scheduler.get_jobs():
+            # APScheduler does not set next_run_time while a job is pending
+            # (for example, before scheduler.start()).
+            next_run = getattr(job, "next_run_time", None)
+            jobs.append({
                 "id":       job.id,
                 "func":     str(job.func_ref),
-                "next_run": str(job.next_run_time),
+                "next_run_time": next_run.isoformat() if next_run else "Pending — scheduler chưa chạy",
                 "trigger":  str(job.trigger),
-            }
-            for job in scheduler.get_jobs()
-        ]
+            })
         return jsonify({
             "status": "success",
             "jobs": jobs,

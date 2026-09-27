@@ -165,10 +165,7 @@ def do_comment(d, comment):
     d.send_keys(comment)
     d.xpath(Xpath["comment_submit"]).click_exists()
     time.sleep(2)
-    w, h = d.window_size()
-    x = int(w * 0.5)
-    y = int(h * 0.2)
-    d.click_exists(x, y)
+    d.press("back")
 
 def do_repost(d):
     d.xpath(Xpath["comment_button"]).click_exists()

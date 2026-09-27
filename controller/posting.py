@@ -92,7 +92,7 @@ def running_post_video(data, sheet_name="seeding"):
             spreadsheet_id,
             sheet_name,
             device_id,
-            "Đã xong"
+            "Done"
         )
     except Exception as exc:
         logging.exception("Posting worker crashed for device=%s", device_id)
@@ -100,7 +100,7 @@ def running_post_video(data, sheet_name="seeding"):
             spreadsheet_id,
             sheet_name,
             device_id,
-            f"Lỗi: {exc}"
+            f"Error: {exc}"
         )
         raise
 
@@ -113,7 +113,6 @@ def upload_video(d, music, caption):
     d.xpath('//*[@resource-id="com.instagram.android:id/feed_tab"]').click_exists()
     random_sleep(5, 10)
     d.xpath(Xpath["create_button"]).click_exists()
-
     random_sleep(5, 10)
     d.xpath('//*[@text="Next"]').click_exists()
     random_sleep(5, 10)

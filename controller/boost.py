@@ -77,14 +77,14 @@ def running_buff_view(data, sheet_name="seeding_2"):
             spreadsheet_id,
             sheet_name,
             device_id,
-            f"Đã xong"
+            f"Done"
         )
     except Exception as e:
         update_running_result(
             spreadsheet_id,
             sheet_name,
             device_id,
-            f"Lỗi: {e}"
+            f"Error: {e}"
         )
 
 def buff_view(view_buff,sleep_time,d,listComment):
@@ -103,7 +103,7 @@ def buff_view(view_buff,sleep_time,d,listComment):
             w, h = d.window_size()
             d.swipe(w * 0.5, h * 0.88, w * 0.5, h * 0.3, 0.2)
             time.sleep(5)
-            d.swipe(w * 0.5, h * 0.3, w * 0.5, h * 0.7, 0.2)
+            d.swipe(w * 0.5, h * 0.3, w * 0.5, h * 0.88, 0.2)
             print(f"{action}")
             if action == "like":
                 time.sleep(2)

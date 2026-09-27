@@ -201,13 +201,13 @@ def main(data, sheet_name = "seeding"):
                 spreadsheet_id,
                 sheet_name,
                 device_id,
-                "Đã xong"
+                "Done"
             )
     except Exception as e:
         update_running_result(
                 spreadsheet_id,
                 sheet_name,
                 device_id,
-                f"Lỗi: {e}"
+                f"Error: {e}"
             )
         
