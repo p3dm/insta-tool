@@ -168,7 +168,7 @@ def do_comment(d, comment):
     d.press("back")
 
 def do_repost(d):
-    d.xpath(Xpath["comment_button"]).click_exists()
+    d.xpath(Xpath["repost_button"]).click_exists()
 
 def scroll_up(d):
     try:
